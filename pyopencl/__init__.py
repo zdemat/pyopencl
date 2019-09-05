@@ -750,9 +750,16 @@ def _add_functionality():
     def kernel__setup(self, prg):
         self._source = getattr(prg, "_source", None)
 
+        # workaround for a bug in Intel/Altera OpenCL
+        enforce_num_args = getattr(self, "enforce_num_args", None)
+        if(enforce_num_args is None):
+            num_args = self.num_args
+        else:
+            num_args = enforce_num_args
+            
         from pyopencl.invoker import generate_enqueue_and_set_args
         self._enqueue, self._set_args = generate_enqueue_and_set_args(
-                self.function_name, self.num_args, self.num_args,
+                self.function_name, num_args, num_args,
                 None,
                 warn_about_arg_count_bug=None,
                 work_around_arg_count_bug=None)
@@ -828,6 +835,11 @@ def _add_functionality():
         else:
             return val
 
+    # workaround for a bug in Intel/Altera OpenCL
+    def kernel_enforce_num_args(self, prg, num_args):
+        self.enforce_num_args = num_args
+        self._setup(prg)
+    
     Kernel.__init__ = kernel_init
     Kernel._setup = kernel__setup
     Kernel.get_work_group_info = kernel_get_work_group_info
@@ -836,6 +848,8 @@ def _add_functionality():
     Kernel.__call__ = kernel_call
     Kernel.capture_call = kernel_capture_call
     Kernel.get_info = kernel_get_info
+    # workaround for a bug in Intel/Altera OpenCL
+    Kernel.set_enforce_num_args = kernel_enforce_num_args
 
     # }}}
 
